@@ -1,0 +1,42 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // ฟังก์ชันตรวจสอบว่าเป็น Admin หรือไม่ (ตรวจสอบจาก Custom Claims หรือ Email)
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.role == 'admin' ||
+        request.auth.token.email in ['admin@beatbyjerji.com', 'jerji.beats@studio.com']
+      );
+    }
+    
+    // ฟังก์ชันตรวจสอบว่าลูกค้าล็อกอินแล้วหรือไม่
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 1. โฟลเดอร์รูปภาพปกบีท (Covers): สาธารณะอ่านได้ แต่เขียนได้เฉพาะ Admin
+    match /covers/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 2. โฟลเดอร์ไฟล์พรีวิวติดลายน้ำ (Previews): สาธารณะสตรีมได้ แต่เขียนได้เฉพาะ Admin
+    match /previews/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 3. โฟลเดอร์ไฟล์ Master WAV คุณภาพสูง: เฉพาะ Admin หรือลูกค้าที่มี Signed URL/Token
+    match /masters/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // 4. โฟลเดอร์ไฟล์แยกแทร็ก Stems (ZIP): เฉพาะ Admin หรือลูกค้าที่มีสิทธิ์
+    match /stems/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

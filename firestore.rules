@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.role == 'admin' ||
+        request.auth.token.email in ['admin@beatbyjerji.com', 'jerji.beats@studio.com']
+      );
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 1. Beats Collection: ทุกคนอ่านบีทที่ PUBLISHED ได้ แต่เฉพาะ Admin ที่สร้าง/แก้ไข/ลบได้
+    match /beats/{beatId} {
+      allow read: if resource.data.status == 'PUBLISHED' || resource.data.status == 'SOLD_OUT' || isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 2. Orders Collection: ลูกค้าอ่านได้เฉพาะออเดอร์ของตนเอง แต่ Admin อ่านได้ทั้งหมด
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // 3. Users Collection
+    match /users/{userId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+  }
+}
