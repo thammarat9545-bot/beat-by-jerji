@@ -41,7 +41,7 @@ export default function LoginPage() {
       if (user.role === 'ADMIN') {
         router.push('/admin');
       } else {
-        router.push('/dashboard');
+        router.push('/'); // เปลี่ยนให้เด้งไปหน้าแรก
       }
     }
   }, [user, router]);
@@ -68,7 +68,7 @@ export default function LoginPage() {
       }
 
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/'); // เปลี่ยนให้เด้งไปหน้าแรก
       }, 800);
     } catch (err: unknown) {
       let message = 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
@@ -99,7 +99,7 @@ export default function LoginPage() {
       await loginWithGoogle();
       setSuccessMsg('เข้าสู่ระบบด้วย Google สำเร็จ!');
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/'); // เปลี่ยนให้เด้งไปหน้าแรก
       }, 800);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'ไม่สามารถเข้าสู่ระบบด้วย Google ได้ กรุณาลองใหม่อีกครั้ง';
