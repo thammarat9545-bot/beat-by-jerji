@@ -14,13 +14,22 @@ import { Beat, BeatStatus, Order } from '@/types';
 import { Music, AlertCircle, Sparkles, ShieldAlert, Lock, ArrowLeft, LogIn } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [beats, setBeats] = useState<Beat[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // ตรวจสอบว่าล็อกอินแล้วหรือยัง ถ้ายังไม่ได้ล็อกอิน ให้เด้งไปหน้า /login ทันที
+  React.useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
 
   // โหลดข้อมูลบีทที่เคยบันทึกไว้ในเบราว์เซอร์
   React.useEffect(() => {
@@ -159,14 +168,41 @@ export default function AdminDashboardPage() {
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="flex items-center gap-3 text-neutral-400 text-sm">
           <div className="w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-          <span>กำลังตรวจสอบสิทธิ์ Admin...</span>
+          <span>กำลังตรวจสอบสถานะการเข้าสู่ระบบ...</span>
         </div>
       </div>
     );
   }
 
-  // 2. Security Guard: เฉพาะผู้ใช้ที่มี Role === 'ADMIN' เท่านั้น
-  if (!user || user.role !== 'ADMIN') {
+  // 2. ถ้ายังไม่ได้ล็อกอิน ให้ขึ้นหน้าแจ้งเตือนและเด้งไปหน้า /login
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-6 shadow-xl shadow-amber-500/10">
+          <Lock className="w-8 h-8" />
+        </div>
+        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 mb-3">
+          Login Required
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">
+          ต้องเข้าสู่ระบบก่อน จึงจะเข้าหน้าแดชบอร์ดได้
+        </h1>
+        <p className="text-xs sm:text-sm text-neutral-400 max-w-md mb-6 leading-relaxed">
+          ระบบกำลังนำคุณไปยังหน้าเข้าสู่ระบบ (Login) เพื่อยืนยันตัวตน...
+        </p>
+        <Link
+          href="/login"
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 text-black text-xs font-bold transition-transform hover:scale-105 shadow-md shadow-amber-500/20"
+        >
+          <LogIn className="w-4 h-4 stroke-[2.5]" />
+          <span>ไปที่หน้าเข้าสู่ระบบทันที</span>
+        </Link>
+      </div>
+    );
+  }
+
+  // 3. ถ้าล็อกอินแล้ว แต่ไม่ใช่ Role === 'ADMIN'
+  if (user.role !== 'ADMIN') {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center font-sans">
         <div className="w-16 h-16 rounded-3xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mb-6 shadow-xl shadow-rose-500/10">
@@ -179,25 +215,15 @@ export default function AdminDashboardPage() {
           สิทธิ์การเข้าถึงถูกจำกัด (Admin Access Required)
         </h1>
         <p className="text-xs sm:text-sm text-neutral-400 max-w-md mb-6 leading-relaxed">
-          ระบบหลังบ้านนี้สงวนไว้เฉพาะเจ้าของร้าน (Owner/Admin) เท่านั้น
-          {user ? (
-            <span className="block mt-2 text-neutral-300">
-              บัญชีปัจจุบันของคุณคือ: <b className="text-white">{user.email}</b> (ระดับสิทธิ์: <b className="text-amber-400">{user.role}</b>)
-            </span>
-          ) : (
-            <span className="block mt-2 text-neutral-300">
-              คุณยังไม่ได้เข้าสู่ระบบ กรุณาเข้าสู่ระบบด้วยบัญชีเจ้าของร้าน
-            </span>
-          )}
+          บัญชีของคุณ (<b className="text-white">{user.email}</b>) ได้รับสิทธิ์เป็น <b>CUSTOMER</b> ซึ่งไม่สามารถเข้าถึงระบบหลังบ้านของเจ้าของร้านได้
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Link
-            href="/login"
+            href="/dashboard"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold transition-transform hover:scale-105 shadow-md shadow-amber-500/20"
           >
-            <LogIn className="w-4 h-4 stroke-[2.5]" />
-            <span>เข้าสู่ระบบด้วยบัญชี Admin</span>
+            <span>ไปที่แดชบอร์ดลูกค้าของคุณ</span>
           </Link>
           <Link
             href="/"

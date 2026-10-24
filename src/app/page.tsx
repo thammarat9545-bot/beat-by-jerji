@@ -234,9 +234,6 @@ export default function Home() {
             <a href="#beats" className="hover:text-amber-400 transition-colors">
               แคตตาล็อกบีท (Beats)
             </a>
-            <a href="#licensing" className="hover:text-amber-400 transition-colors">
-              สิทธิ์การใช้งาน (Licensing)
-            </a>
             <a href="#about" className="hover:text-amber-400 transition-colors">
               เกี่ยวกับสตูดิโอ (About)
             </a>
@@ -494,114 +491,6 @@ export default function Home() {
             })}
           </div>
         )}
-      </section>
-
-      {/* Licensing Breakdown Section */}
-      <section id="licensing" className="max-w-7xl mx-auto px-6 py-20 border-t border-neutral-850">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-3 inline-block">
-            TIERED LICENSING GUIDE
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-white">
-            เลือกประเภทสิทธิ์ให้เหมาะกับโปรเจกต์ของคุณ
-          </h2>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-3">
-            ทุกแพ็กเกจจะได้รับไฟล์เสียงแท้คุณภาพสูง ส่งตรงผ่าน Cloud Storage ทันทีหลังสั่งซื้อ
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* 1. Basic Lease */}
-          <div className="rounded-3xl bg-neutral-900/60 border border-neutral-800 p-6 flex flex-col justify-between backdrop-blur-sm">
-            <div>
-              <span className="text-xs font-semibold text-blue-400">STARTER</span>
-              <h3 className="text-lg font-bold text-white mt-1">Basic MP3 Lease</h3>
-              <p className="text-xs text-neutral-400 mt-2 mb-4">
-                เหมาะสำหรับการบันทึกเสียงเดโม มิกซ์เทป หรือเพลงปล่อยบน YouTube/Soundcloud
-              </p>
-              <ul className="space-y-2 text-xs text-neutral-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> ไฟล์ Untagged MP3
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> สูงสุด 50,000 สตรีม
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> เอกสารสิทธิ์แบบ Non-Exclusive
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* 2. Premium Lease */}
-          <div className="rounded-3xl bg-neutral-900/60 border border-purple-500/40 p-6 flex flex-col justify-between backdrop-blur-sm relative">
-            <span className="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500 text-white">
-              POPULAR
-            </span>
-            <div>
-              <span className="text-xs font-semibold text-purple-400">ARTIST CHOICE</span>
-              <h3 className="text-lg font-bold text-white mt-1">Premium WAV</h3>
-              <p className="text-xs text-neutral-400 mt-2 mb-4">
-                สำหรับปล่อยเพลงลง Spotify, Apple Music คุณภาพเสียงแบบ Lossless Studio
-              </p>
-              <ul className="space-y-2 text-xs text-neutral-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> ไฟล์ Master WAV + MP3
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> สูงสุด 250,000 สตรีม
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> แสดงสดและปล่อยมิวสิควิดีโอได้
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* 3. Trackout Stems */}
-          <div className="rounded-3xl bg-neutral-900/60 border border-neutral-800 p-6 flex flex-col justify-between backdrop-blur-sm">
-            <div>
-              <span className="text-xs font-semibold text-pink-400">PRODUCTION</span>
-              <h3 className="text-lg font-bold text-white mt-1">Trackout Stems</h3>
-              <p className="text-xs text-neutral-400 mt-2 mb-4">
-                ได้ไฟล์แยกแทร็กเครื่องดนตรีทั้งหมด เหมาะกับ Mixing Engineer มืออาชีพ
-              </p>
-              <ul className="space-y-2 text-xs text-neutral-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> ไฟล์ ZIP แยกแทร็ก (Stems)
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> ไฟล์ Master WAV คุณภาพสูงสุด
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-400" /> ปรับแต่งโครงสร้างเพลงได้อิสระ
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* 4. Exclusive Rights */}
-          <div className="rounded-3xl bg-gradient-to-b from-amber-500/10 to-neutral-900/80 border border-amber-500/50 p-6 flex flex-col justify-between backdrop-blur-sm">
-            <div>
-              <span className="text-xs font-semibold text-amber-400">OWNERSHIP</span>
-              <h3 className="text-lg font-bold text-white mt-1">Exclusive Rights</h3>
-              <p className="text-xs text-neutral-400 mt-2 mb-4">
-                สิทธิ์ซื้อขาดแต่เพียงผู้เดียว บีทจะถูกขึ้นสถานะ Sold Out และถอดออกจากการขายทันที
-              </p>
-              <ul className="space-y-2 text-xs text-neutral-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-amber-400" /> สิทธิ์ความเป็นเจ้าของแต่ผู้เดียว
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-amber-400" /> ไม่จำกัดยอดสตรีมและรายได้
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-amber-400" /> ได้รับไฟล์แทร็กทั้งหมด + สัญญาโอนสิทธิ์
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* About & Producer Showcase */}
