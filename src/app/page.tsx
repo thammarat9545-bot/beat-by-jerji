@@ -32,6 +32,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { Beat, LicenseType, Order } from '@/types';
+import PromptPayModal from '@/components/checkout/PromptPayModal';
 
 export default function Home() {
   const router = useRouter();
@@ -50,6 +51,12 @@ export default function Home() {
 
   // License Modal
   const [selectedBeatForLicense, setSelectedBeatForLicense] = useState<Beat | null>(null);
+
+  // PromptPay Checkout Modal
+  const [isPromptPayOpen, setIsPromptPayOpen] = useState(false);
+  const [checkoutBeat, setCheckoutBeat] = useState<Beat | null>(null);
+  const [checkoutLicense, setCheckoutLicense] = useState<LicenseType>('BASIC_MP3');
+  const [checkoutPrice, setCheckoutPrice] = useState<number>(0);
 
   // Toast feedback
   const [toast, setToast] = useState<string | null>(null);
@@ -122,7 +129,7 @@ export default function Home() {
     return `${mins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
   };
 
-  const handlePurchaseLicense = (licenseType: LicenseType, price: number) => {
+  const handleSelectLicenseToPay = (licenseType: LicenseType, price: number) => {
     if (!selectedBeatForLicense) return;
 
     if (!user) {
@@ -130,43 +137,21 @@ export default function Home() {
       return;
     }
 
-    const orderNumber = `ORD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Date.now().toString().slice(-4)}`;
+    setCheckoutBeat(selectedBeatForLicense);
+    setCheckoutLicense(licenseType);
+    setCheckoutPrice(price);
+    setSelectedBeatForLicense(null); // ปิด modal เลือก license
+    setIsPromptPayOpen(true); // เปิด modal คิวอาร์โค้ดพร้อมเพย์
+  };
 
-    const newOrder: Order = {
-      id: `ord-${Date.now()}`,
-      orderNumber,
-      customerName: user.displayName || user.email || 'ลูกค้าสตูดิโอ',
-      customerEmail: user.email || '',
-      totalAmount: price,
-      currency: 'THB',
-      status: 'COMPLETED',
-      provider: 'PROMPTPAY',
-      items: [
-        {
-          id: `item-${Date.now()}`,
-          beatId: selectedBeatForLicense.id,
-          beatTitle: selectedBeatForLicense.title,
-          coverImageUrl: selectedBeatForLicense.coverImageUrl,
-          previewAudioUrl: selectedBeatForLicense.previewAudioUrl,
-          untaggedWavUrl: selectedBeatForLicense.untaggedWavUrl,
-          stemsZipUrl: selectedBeatForLicense.stemsZipUrl,
-          bpm: selectedBeatForLicense.bpm,
-          musicalKey: selectedBeatForLicense.musicalKey,
-          genre: selectedBeatForLicense.genre,
-          licenseType,
-          price,
-        },
-      ],
-      createdAt: new Date().toISOString(),
-    };
-
+  const handlePaymentSuccess = (newOrder: Order) => {
     try {
       const existingOrders: Order[] = JSON.parse(localStorage.getItem('jerji_studio_orders') || '[]');
       localStorage.setItem('jerji_studio_orders', JSON.stringify([newOrder, ...existingOrders]));
 
-      if (licenseType === 'EXCLUSIVE') {
+      if (checkoutLicense === 'EXCLUSIVE' && checkoutBeat) {
         const updatedBeats = beats.map((b) =>
-          b.id === selectedBeatForLicense.id ? { ...b, status: 'SOLD_OUT' as const } : b
+          b.id === checkoutBeat.id ? { ...b, status: 'SOLD_OUT' as const } : b
         );
         setBeats(updatedBeats);
         localStorage.setItem('jerji_studio_beats', JSON.stringify(updatedBeats));
@@ -175,8 +160,7 @@ export default function Home() {
       console.error(e);
     }
 
-    showToast(`สั่งซื้อสิทธิ์สำเร็จ! แทร็กถูกเพิ่มเข้าสู่ My Library ของคุณแล้ว`);
-    setSelectedBeatForLicense(null);
+    showToast(`ชำระเงินสำเร็จ! เพิ่ม ${newOrder.items[0]?.beatTitle} เข้าสู่คลังเรียบร้อย`);
   };
 
   // Filter beats
@@ -554,7 +538,7 @@ export default function Home() {
               {/* Option 1: Basic */}
               <div
                 onClick={() =>
-                  handlePurchaseLicense('BASIC_MP3', selectedBeatForLicense.pricing.basicMp3)
+                  handleSelectLicenseToPay('BASIC_MP3', selectedBeatForLicense.pricing.basicMp3)
                 }
                 className="p-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-800/60 border border-neutral-800 hover:border-amber-500/40 transition-all flex items-center justify-between cursor-pointer group"
               >
@@ -572,7 +556,7 @@ export default function Home() {
               {/* Option 2: Premium */}
               <div
                 onClick={() =>
-                  handlePurchaseLicense('PREMIUM_WAV', selectedBeatForLicense.pricing.premiumWav)
+                  handleSelectLicenseToPay('PREMIUM_WAV', selectedBeatForLicense.pricing.premiumWav)
                 }
                 className="p-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-800/60 border border-purple-500/30 hover:border-purple-500 transition-all flex items-center justify-between cursor-pointer group"
               >
@@ -590,7 +574,7 @@ export default function Home() {
               {/* Option 3: Trackout Stems */}
               <div
                 onClick={() =>
-                  handlePurchaseLicense('TRACKOUT_STEMS', selectedBeatForLicense.pricing.trackoutStems)
+                  handleSelectLicenseToPay('TRACKOUT_STEMS', selectedBeatForLicense.pricing.trackoutStems)
                 }
                 className="p-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-800/60 border border-neutral-800 hover:border-pink-500/40 transition-all flex items-center justify-between cursor-pointer group"
               >
@@ -609,7 +593,7 @@ export default function Home() {
               {selectedBeatForLicense.status !== 'SOLD_OUT' && (
                 <div
                   onClick={() =>
-                    handlePurchaseLicense('EXCLUSIVE', selectedBeatForLicense.pricing.exclusive)
+                    handleSelectLicenseToPay('EXCLUSIVE', selectedBeatForLicense.pricing.exclusive)
                   }
                   className="p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 transition-all flex items-center justify-between cursor-pointer group"
                 >
@@ -628,6 +612,18 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* PromptPay QR Code Payment Modal */}
+      <PromptPayModal
+        isOpen={isPromptPayOpen}
+        onClose={() => setIsPromptPayOpen(false)}
+        beat={checkoutBeat}
+        licenseType={checkoutLicense}
+        price={checkoutPrice}
+        userEmail={user?.email || ''}
+        userName={user?.displayName || ''}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
 
       {/* Persistent Audio Bar (Bottom Player) */}
       {currentBeat && (
