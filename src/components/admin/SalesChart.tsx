@@ -80,51 +80,29 @@ export default function SalesChart() {
         )}
       </div>
 
-      {/* License Tier Share */}
+      {/* Sales Channel Share */}
       <div className="rounded-2xl border border-neutral-800 bg-neutral-900/50 p-6 backdrop-blur-sm flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-base font-semibold text-white flex items-center gap-2">
               <PieIcon className="w-4 h-4 text-purple-400" />
-              สัดส่วน License ที่ขายได้
+              ช่องทางชำระเงินและสถิติการขาย
             </h3>
           </div>
           <p className="text-xs text-neutral-400 mb-4">
-            วิเคราะห์ประเภทสิทธิ์ที่ลูกค้านิยมซื้อมากที่สุด
+            สัดส่วนการชำระเงินและการจำหน่ายบีท
           </p>
 
-          {hasShareData ? (
-            <div className="h-[180px] w-full relative flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={LICENSE_TIER_SHARE}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {LICENSE_TIER_SHARE.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} stroke="#171717" strokeWidth={2} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-[180px] flex flex-col items-center justify-center text-center p-4 border border-dashed border-neutral-800 rounded-xl bg-neutral-950/40">
-              <PieIcon className="w-8 h-8 text-neutral-600 mb-2" />
-              <p className="text-xs font-semibold text-neutral-400">ยังไม่มีประวัติสัดส่วน License</p>
-              <p className="text-[11px] text-neutral-500 mt-1">รอการสั่งซื้อรายการแรก</p>
-            </div>
-          )}
+          <div className="h-[180px] flex flex-col items-center justify-center text-center p-4 border border-dashed border-neutral-800 rounded-xl bg-neutral-950/40">
+            <PieIcon className="w-8 h-8 text-neutral-600 mb-2" />
+            <p className="text-xs font-semibold text-neutral-400">ยังไม่มีสถิติการจำหน่าย</p>
+            <p className="text-[11px] text-neutral-500 mt-1">ข้อมูลจะคำนวณอัตโนมัติเมื่อมีคำสั่งซื้อผ่านพร้อมเพย์</p>
+          </div>
         </div>
 
         <div className="pt-4 border-t border-neutral-800">
           <p className="text-[11px] text-neutral-500 text-center">
-            ระบบรองรับ 4 ระดับสิทธิ์: Basic, Premium, Stems, Exclusive
+            ระบบรองรับการรับชำระผ่าน PromptPay QR Code มาตรฐาน ธปท.
           </p>
         </div>
       </div>

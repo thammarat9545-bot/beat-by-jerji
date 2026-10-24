@@ -68,11 +68,8 @@ export default function UploadBeatModal({
     }
   };
 
-  // Pricing
-  const [priceBasic, setPriceBasic] = useState(790);
-  const [pricePremium, setPricePremium] = useState(1490);
-  const [priceTrackout, setPriceTrackout] = useState(2990);
-  const [priceExclusive, setPriceExclusive] = useState(8900);
+  // Single Beat Price
+  const [price, setPrice] = useState(1200);
 
   useEffect(() => {
     if (editingBeat) {
@@ -84,10 +81,7 @@ export default function UploadBeatModal({
       setCoverImageUrl(editingBeat.coverImageUrl);
       setPreviewAudioUrl(editingBeat.previewAudioUrl);
       setStatus(editingBeat.status);
-      setPriceBasic(editingBeat.pricing.basicMp3);
-      setPricePremium(editingBeat.pricing.premiumWav);
-      setPriceTrackout(editingBeat.pricing.trackoutStems);
-      setPriceExclusive(editingBeat.pricing.exclusive);
+      setPrice(editingBeat.price || 1200);
     } else {
       // Default reset for new beat
       setTitle('');
@@ -98,10 +92,7 @@ export default function UploadBeatModal({
       setCoverImageUrl('');
       setPreviewAudioUrl('');
       setStatus('PUBLISHED');
-      setPriceBasic(790);
-      setPricePremium(1490);
-      setPriceTrackout(2990);
-      setPriceExclusive(8900);
+      setPrice(1200);
     }
   }, [editingBeat, isOpen]);
 
@@ -135,12 +126,7 @@ export default function UploadBeatModal({
       coverImageUrl,
       previewAudioUrl,
       status,
-      pricing: {
-        basicMp3: Number(priceBasic),
-        premiumWav: Number(pricePremium),
-        trackoutStems: Number(priceTrackout),
-        exclusive: Number(priceExclusive),
-      },
+      price: Number(price),
     });
     onClose();
   };
@@ -156,7 +142,7 @@ export default function UploadBeatModal({
               {editingBeat ? 'แก้ไขข้อมูลบีท' : 'อัปโหลดบีทใหม่ (Upload New Beat)'}
             </h2>
             <p className="text-xs text-neutral-400 mt-0.5">
-              กำหนดไฟล์เสียง ปกเพลง ข้อมูลสเปก และราคาตาม License
+              กำหนดไฟล์เสียง ปกเพลง ข้อมูลสเปก และราคาจำหน่ายบีท
             </p>
           </div>
           <button
@@ -329,70 +315,27 @@ export default function UploadBeatModal({
             </div>
           </div>
 
-          {/* Pricing Tiers */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
-              กำหนดราคาตามประเภทสิทธิ์ (License Pricing in THB)
-            </h4>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl bg-neutral-800/60 border border-neutral-700">
-                <span className="block text-[11px] font-medium text-neutral-400">Basic Lease</span>
-                <span className="block text-[10px] text-neutral-500 mb-1">Untagged MP3</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-500">฿</span>
-                  <input
-                    type="number"
-                    value={priceBasic}
-                    onChange={(e) => setPriceBasic(Number(e.target.value))}
-                    className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs font-semibold text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-neutral-800/60 border border-neutral-700">
-                <span className="block text-[11px] font-medium text-neutral-400">Premium Lease</span>
-                <span className="block text-[10px] text-neutral-500 mb-1">Master WAV + MP3</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-500">฿</span>
-                  <input
-                    type="number"
-                    value={pricePremium}
-                    onChange={(e) => setPricePremium(Number(e.target.value))}
-                    className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs font-semibold text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-neutral-800/60 border border-neutral-700">
-                <span className="block text-[11px] font-medium text-neutral-400">Trackout Stems</span>
-                <span className="block text-[10px] text-neutral-500 mb-1">WAV + Separated ZIP</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-neutral-500">฿</span>
-                  <input
-                    type="number"
-                    value={priceTrackout}
-                    onChange={(e) => setPriceTrackout(Number(e.target.value))}
-                    className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs font-semibold text-white focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                <span className="block text-[11px] font-medium text-amber-300">Exclusive Rights</span>
-                <span className="block text-[10px] text-amber-400/70 mb-1">สิทธิ์ซื้อขาดแต่ผู้เดียว</span>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-amber-400">฿</span>
-                  <input
-                    type="number"
-                    value={priceExclusive}
-                    onChange={(e) => setPriceExclusive(Number(e.target.value))}
-                    className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-neutral-900 border border-amber-500/40 text-xs font-bold text-amber-300 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
-              </div>
+          {/* Beat Price (Single Price) */}
+          <div className="p-4 rounded-2xl bg-neutral-950/80 border border-neutral-800">
+            <label className="block text-xs font-bold text-neutral-200 mb-1.5 flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4 text-amber-400" />
+              <span>กำหนดราคาบีท (Beat Price in THB) *</span>
+            </label>
+            <div className="relative max-w-xs">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-amber-400 font-mono">฿</span>
+              <input
+                type="number"
+                min="0"
+                required
+                value={price}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                placeholder="เช่น 1200"
+                className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-neutral-900 border border-neutral-700 text-base font-bold text-white focus:outline-none focus:border-amber-500 font-mono"
+              />
             </div>
+            <p className="text-[11px] text-neutral-400 mt-1.5">
+              กำหนดราคาเดียวสำหรับบีทนี้ ลูกค้าจะชำระตามยอดนี้ผ่าน PromptPay QR Code เพื่อสั่งซื้อและปลดล็อกไฟล์บีทตัวเต็ม
+            </p>
           </div>
 
           {/* Status Selection */}

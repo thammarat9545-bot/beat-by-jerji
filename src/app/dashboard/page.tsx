@@ -35,7 +35,7 @@ interface PurchasedBeatItem {
   genre: string;
   coverImageUrl: string;
   previewAudioUrl: string;
-  licenseType: LicenseType;
+  licenseType?: LicenseType;
   untaggedWavUrl?: string;
   stemsZipUrl?: string;
   downloadCount: number;
@@ -97,7 +97,7 @@ export default function CustomerDashboardPage() {
                 previewAudioUrl: item.previewAudioUrl || '',
                 untaggedWavUrl: item.untaggedWavUrl,
                 stemsZipUrl: item.stemsZipUrl,
-                licenseType: item.licenseType,
+                licenseType: item.licenseType || 'EXCLUSIVE',
                 downloadCount: 0,
               });
             });
@@ -138,33 +138,12 @@ export default function CustomerDashboardPage() {
     );
   }
 
-  const getLicenseBadge = (type: LicenseType) => {
-    switch (type) {
-      case 'EXCLUSIVE':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            Exclusive Rights (ซื้อขาด)
-          </span>
-        );
-      case 'TRACKOUT_STEMS':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-pink-500/20 text-pink-300 border border-pink-500/30">
-            Trackout Stems (แยกแทร็ก)
-          </span>
-        );
-      case 'PREMIUM_WAV':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            Premium WAV + MP3
-          </span>
-        );
-      case 'BASIC_MP3':
-        return (
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-            Basic MP3 Lease
-          </span>
-        );
-    }
+  const getLicenseBadge = (_type?: LicenseType) => {
+    return (
+      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        สิทธิ์การใช้งานบีทตัวเต็ม (Full Beat Rights)
+      </span>
+    );
   };
 
   return (
@@ -376,17 +355,14 @@ export default function CustomerDashboardPage() {
                         <span>Master WAV</span>
                       </button>
 
-                      {(beat.licenseType === 'TRACKOUT_STEMS' ||
-                        beat.licenseType === 'EXCLUSIVE') && (
-                        <button
-                          onClick={() => handleDownload('Stems ZIP', beat.beatTitle)}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-semibold border border-purple-500/30 transition-colors cursor-pointer"
-                          title="ดาวน์โหลดไฟล์แยกแทร็กเครื่องดนตรีทั้งหมด (ZIP)"
-                        >
-                          <Archive className="w-3.5 h-3.5 text-purple-400" />
-                          <span>Track Stems (ZIP)</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDownload('Stems ZIP', beat.beatTitle)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-semibold border border-purple-500/30 transition-colors cursor-pointer"
+                        title="ดาวน์โหลดไฟล์แยกแทร็กเครื่องดนตรีทั้งหมด (ZIP)"
+                      >
+                        <Archive className="w-3.5 h-3.5 text-purple-400" />
+                        <span>Track Stems (ZIP)</span>
+                      </button>
 
                       <button
                         onClick={() => handleDownload('License Agreement PDF', beat.beatTitle)}

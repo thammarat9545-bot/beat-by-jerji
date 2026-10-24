@@ -106,7 +106,7 @@ export default function AdminDashboardPage() {
   const handleSaveBeat = (beatData: Partial<Beat>) => {
     if (editingBeat) {
       setBeats((prev) =>
-        prev.map((b) => (b.id === editingBeat.id ? ({ ...b, ...beatData } as Beat) : b))
+        prev.map((b) => (b.id === editingBeat.id ? ({ ...b, ...beatData, price: Number(beatData.price || b.price || 1200) } as Beat) : b))
       );
       showToast('อัปเดตข้อมูลบีทเรียบร้อยแล้ว');
     } else {
@@ -124,12 +124,7 @@ export default function AdminDashboardPage() {
         playsCount: 0,
         likesCount: 0,
         downloadsCount: 0,
-        pricing: beatData.pricing || {
-          basicMp3: 790,
-          premiumWav: 1490,
-          trackoutStems: 2990,
-          exclusive: 8900,
-        },
+        price: Number(beatData.price || 1200),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

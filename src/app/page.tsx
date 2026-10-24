@@ -49,13 +49,9 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // License Modal
-  const [selectedBeatForLicense, setSelectedBeatForLicense] = useState<Beat | null>(null);
-
   // PromptPay Checkout Modal
   const [isPromptPayOpen, setIsPromptPayOpen] = useState(false);
   const [checkoutBeat, setCheckoutBeat] = useState<Beat | null>(null);
-  const [checkoutLicense, setCheckoutLicense] = useState<LicenseType>('BASIC_MP3');
   const [checkoutPrice, setCheckoutPrice] = useState<number>(0);
 
   // Toast feedback
@@ -129,19 +125,20 @@ export default function Home() {
     return `${mins}:${remainingSecs < 10 ? '0' : ''}${remainingSecs}`;
   };
 
-  const handleSelectLicenseToPay = (licenseType: LicenseType, price: number) => {
-    if (!selectedBeatForLicense) return;
-
+  const handleBuyBeat = (beat: Beat) => {
+    if (beat.status === 'SOLD_OUT') {
+      showToast('ขออภัย บีทนี้มีผู้สั่งซื้อไปแล้ว');
+      return;
+    }
     if (!user) {
       router.push('/login');
       return;
     }
 
-    setCheckoutBeat(selectedBeatForLicense);
-    setCheckoutLicense(licenseType);
+    const price = beat.price ?? beat.pricing?.basicMp3 ?? 1200;
+    setCheckoutBeat(beat);
     setCheckoutPrice(price);
-    setSelectedBeatForLicense(null); // ปิด modal เลือก license
-    setIsPromptPayOpen(true); // เปิด modal คิวอาร์โค้ดพร้อมเพย์
+    setIsPromptPayOpen(true);
   };
 
   const handlePaymentSuccess = (newOrder: Order) => {
@@ -149,7 +146,7 @@ export default function Home() {
       const existingOrders: Order[] = JSON.parse(localStorage.getItem('jerji_studio_orders') || '[]');
       localStorage.setItem('jerji_studio_orders', JSON.stringify([newOrder, ...existingOrders]));
 
-      if (checkoutLicense === 'EXCLUSIVE' && checkoutBeat) {
+      if (checkoutBeat) {
         const updatedBeats = beats.map((b) =>
           b.id === checkoutBeat.id ? { ...b, status: 'SOLD_OUT' as const } : b
         );
@@ -453,22 +450,28 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Pricing & License Action */}
+                  {/* Pricing & Buy Action */}
                   <div className="p-5 pt-0 border-t border-neutral-850/80 flex items-center justify-between mt-4">
                     <div>
-                      <span className="text-[10px] text-neutral-400 block">เริ่มต้น (Basic MP3)</span>
+                      <span className="text-[10px] text-neutral-400 block">ราคาบีท (Price)</span>
                       <span className="text-base font-extrabold text-amber-400 font-mono">
-                        ฿{beat.pricing.basicMp3.toLocaleString()}
+                        ฿{(beat.price ?? beat.pricing?.basicMp3 ?? 1200).toLocaleString()}
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => setSelectedBeatForLicense(beat)}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black text-xs font-bold shadow-md shadow-amber-500/20 transition-all hover:scale-105 cursor-pointer"
-                    >
-                      <ShoppingBag className="w-3.5 h-3.5" />
-                      <span>เลือก License</span>
-                    </button>
+                    {beat.status === 'SOLD_OUT' ? (
+                      <span className="px-3.5 py-2 rounded-xl bg-neutral-800 text-neutral-400 text-xs font-semibold">
+                        ขายแล้ว (Sold Out)
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleBuyBeat(beat)}
+                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-black text-xs font-bold shadow-md shadow-amber-500/20 transition-all hover:scale-105 cursor-pointer"
+                      >
+                        <ShoppingBag className="w-3.5 h-3.5" />
+                        <span>สั่งซื้อบีท</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -505,120 +508,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* License Selector Modal */}
-      {selectedBeatForLicense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-neutral-900 border border-neutral-800 rounded-3xl p-6 sm:p-8 text-white shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
-              <div className="flex items-center gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={selectedBeatForLicense.coverImageUrl}
-                  alt={selectedBeatForLicense.title}
-                  className="w-12 h-12 rounded-xl object-cover"
-                />
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    {selectedBeatForLicense.title}
-                  </h3>
-                  <p className="text-xs text-neutral-400">
-                    เลือกประเภทสิทธิ์การใช้งาน (Select License Tier)
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedBeatForLicense(null)}
-                className="p-2 text-neutral-400 hover:text-white rounded-xl hover:bg-neutral-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              {/* Option 1: Basic */}
-              <div
-                onClick={() =>
-                  handleSelectLicenseToPay('BASIC_MP3', selectedBeatForLicense.pricing.basicMp3)
-                }
-                className="p-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-800/60 border border-neutral-800 hover:border-amber-500/40 transition-all flex items-center justify-between cursor-pointer group"
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-amber-400">
-                    Basic Lease (Untagged MP3)
-                  </h4>
-                  <p className="text-xs text-neutral-400">ได้ไฟล์เสียง MP3 ไร้ลายน้ำ สูงสุด 50,000 สตรีม</p>
-                </div>
-                <span className="text-base font-extrabold text-amber-400 font-mono">
-                  ฿{selectedBeatForLicense.pricing.basicMp3.toLocaleString()}
-                </span>
-              </div>
-
-              {/* Option 2: Premium */}
-              <div
-                onClick={() =>
-                  handleSelectLicenseToPay('PREMIUM_WAV', selectedBeatForLicense.pricing.premiumWav)
-                }
-                className="p-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-800/60 border border-purple-500/30 hover:border-purple-500 transition-all flex items-center justify-between cursor-pointer group"
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-purple-300">
-                    Premium Lease (Master WAV + MP3)
-                  </h4>
-                  <p className="text-xs text-neutral-400">ไฟล์ WAV คุณภาพสตูดิโอ สูงสุด 250,000 สตรีม</p>
-                </div>
-                <span className="text-base font-extrabold text-purple-300 font-mono">
-                  ฿{selectedBeatForLicense.pricing.premiumWav.toLocaleString()}
-                </span>
-              </div>
-
-              {/* Option 3: Trackout Stems */}
-              <div
-                onClick={() =>
-                  handleSelectLicenseToPay('TRACKOUT_STEMS', selectedBeatForLicense.pricing.trackoutStems)
-                }
-                className="p-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-800/60 border border-neutral-800 hover:border-pink-500/40 transition-all flex items-center justify-between cursor-pointer group"
-              >
-                <div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-pink-300">
-                    Trackout Stems (ZIP แทร็กแยก)
-                  </h4>
-                  <p className="text-xs text-neutral-400">ไฟล์แยกชิ้นดนตรีทั้งหมด พร้อมไฟล์ Master WAV</p>
-                </div>
-                <span className="text-base font-extrabold text-pink-300 font-mono">
-                  ฿{selectedBeatForLicense.pricing.trackoutStems.toLocaleString()}
-                </span>
-              </div>
-
-              {/* Option 4: Exclusive */}
-              {selectedBeatForLicense.status !== 'SOLD_OUT' && (
-                <div
-                  onClick={() =>
-                    handleSelectLicenseToPay('EXCLUSIVE', selectedBeatForLicense.pricing.exclusive)
-                  }
-                  className="p-4 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 transition-all flex items-center justify-between cursor-pointer group"
-                >
-                  <div>
-                    <h4 className="text-sm font-bold text-amber-300 group-hover:text-amber-200">
-                      Exclusive Rights (ซื้อขาดแต่ผู้เดียว)
-                    </h4>
-                    <p className="text-xs text-amber-400/70">สิทธิ์เป็นของคุณแต่ผู้เดียว บีทจะ Sold Out ทันที</p>
-                  </div>
-                  <span className="text-base font-extrabold text-amber-300 font-mono">
-                    ฿{selectedBeatForLicense.pricing.exclusive.toLocaleString()}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* PromptPay QR Code Payment Modal */}
       <PromptPayModal
         isOpen={isPromptPayOpen}
         onClose={() => setIsPromptPayOpen(false)}
         beat={checkoutBeat}
-        licenseType={checkoutLicense}
         price={checkoutPrice}
         userEmail={user?.email || ''}
         userName={user?.displayName || ''}
@@ -680,11 +574,16 @@ export default function Home() {
             {/* Quick Buy & Close */}
             <div className="flex items-center justify-end gap-3 w-1/4">
               <button
-                onClick={() => setSelectedBeatForLicense(currentBeat)}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-xs shadow-md shadow-amber-500/20 hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => handleBuyBeat(currentBeat)}
+                disabled={currentBeat.status === 'SOLD_OUT'}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold text-xs shadow-md shadow-amber-500/20 hover:scale-105 transition-transform cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span>฿{currentBeat.pricing.basicMp3.toLocaleString()}</span>
+                <span>
+                  {currentBeat.status === 'SOLD_OUT'
+                    ? 'ขายแล้ว'
+                    : `฿${(currentBeat.price ?? currentBeat.pricing?.basicMp3 ?? 1200).toLocaleString()}`}
+                </span>
               </button>
 
               <button

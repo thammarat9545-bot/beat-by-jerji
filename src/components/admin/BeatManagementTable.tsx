@@ -99,7 +99,7 @@ export default function BeatManagementTable({
             </span>
           </h3>
           <p className="text-xs text-neutral-400 mt-1">
-            อัปโหลด แก้ไขราคา License และควบคุมสถานะสิทธิ์ Exclusive ของแต่ละแทร็ก
+            อัปโหลด แก้ไขราคาบีท และควบคุมสถานะการจำหน่ายของแต่ละแทร็ก
           </p>
         </div>
 
@@ -150,7 +150,7 @@ export default function BeatManagementTable({
               <th className="py-3.5 px-4">บีท / ข้อมูลเสียง</th>
               <th className="py-3.5 px-4">แนวเพลง & แท็ก</th>
               <th className="py-3.5 px-4 text-center">BPM / Key</th>
-              <th className="py-3.5 px-4">ราคาตาม License</th>
+              <th className="py-3.5 px-4 text-center">ราคาบีท (THB)</th>
               <th className="py-3.5 px-4 text-center">สถิติเปิดฟัง</th>
               <th className="py-3.5 px-4 text-center">สถานะ</th>
               <th className="py-3.5 px-4 text-right">จัดการ</th>
@@ -254,22 +254,11 @@ export default function BeatManagementTable({
                       </div>
                     </td>
 
-                    {/* Pricing Tiers */}
-                    <td className="py-3.5 px-4">
-                      <div className="text-xs space-y-0.5">
-                        <div className="flex items-center justify-between gap-3 text-neutral-300">
-                          <span className="text-[11px] text-neutral-400">MP3 / WAV:</span>
-                          <span className="font-mono font-medium">
-                            ฿{beat.pricing.basicMp3.toLocaleString()} / ฿{beat.pricing.premiumWav.toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3 text-amber-400">
-                          <span className="text-[11px] text-neutral-400">Exclusive:</span>
-                          <span className="font-mono font-semibold">
-                            ฿{beat.pricing.exclusive.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
+                    {/* Beat Price (Single Price) */}
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="font-mono font-bold text-amber-400 text-sm">
+                        ฿{(beat.price ?? beat.pricing?.basicMp3 ?? 0).toLocaleString()}
+                      </span>
                     </td>
 
                     {/* Plays Count */}

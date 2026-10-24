@@ -24,7 +24,7 @@ interface PromptPayModalProps {
   isOpen: boolean;
   onClose: () => void;
   beat: Beat | null;
-  licenseType: LicenseType;
+  licenseType?: LicenseType;
   price: number;
   userEmail: string;
   userName: string;
@@ -35,7 +35,7 @@ export default function PromptPayModal({
   isOpen,
   onClose,
   beat,
-  licenseType,
+  licenseType = 'EXCLUSIVE',
   price,
   userEmail,
   userName,
@@ -179,7 +179,7 @@ export default function PromptPayModal({
               <div className="min-w-0 flex-1">
                 <h4 className="text-base font-bold text-white truncate">{beat.title}</h4>
                 <p className="text-xs text-amber-400 font-medium truncate mt-0.5">
-                  {getLicenseLabel(licenseType)}
+                  สิทธิ์การใช้งานบีทตัวเต็ม (Full Beat Rights)
                 </p>
                 <p className="text-[11px] text-neutral-400 mt-0.5">
                   {beat.bpm} BPM • {beat.musicalKey} • {beat.genre}
@@ -326,8 +326,8 @@ export default function PromptPayModal({
                   <span className="text-white font-medium">{beat.title}</span>
                 </div>
                 <div className="flex justify-between text-neutral-400">
-                  <span>สิทธิ์ที่สั่งซื้อ:</span>
-                  <span className="text-amber-400 font-semibold">{getLicenseLabel(licenseType)}</span>
+                  <span>สิทธิ์ที่ได้รับ:</span>
+                  <span className="text-amber-400 font-semibold">สิทธิ์การใช้งานบีทตัวเต็ม (Full Rights)</span>
                 </div>
                 <div className="flex justify-between text-neutral-400 pt-2 border-t border-neutral-850">
                   <span>ยอดชำระสุทธิ:</span>

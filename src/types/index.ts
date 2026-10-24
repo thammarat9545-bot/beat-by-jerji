@@ -31,7 +31,8 @@ export interface Beat {
   playsCount: number;
   likesCount: number;
   downloadsCount: number;
-  pricing: LicensePricing;
+  price: number;           // ราคาเดียวที่กำหนดได้เอง (THB)
+  pricing?: LicensePricing;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,7 +48,7 @@ export interface OrderItem {
   bpm?: number;
   musicalKey?: string;
   genre?: string;
-  licenseType: LicenseType;
+  licenseType?: LicenseType;
   price: number;
 }
 

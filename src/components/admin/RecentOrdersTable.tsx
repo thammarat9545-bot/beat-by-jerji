@@ -9,33 +9,12 @@ interface RecentOrdersTableProps {
 }
 
 export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
-  const getLicenseBadge = (type: LicenseType) => {
-    switch (type) {
-      case 'EXCLUSIVE':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-            Exclusive Rights
-          </span>
-        );
-      case 'TRACKOUT_STEMS':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-pink-500/20 text-pink-300 border border-pink-500/30">
-            Trackout Stems
-          </span>
-        );
-      case 'PREMIUM_WAV':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30">
-            Premium WAV
-          </span>
-        );
-      case 'BASIC_MP3':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
-            Basic MP3
-          </span>
-        );
-    }
+  const getLicenseBadge = (_type?: LicenseType) => {
+    return (
+      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+        Full Beat License
+      </span>
+    );
   };
 
   const getStatusBadge = (status: Order['status']) => {
@@ -90,7 +69,7 @@ export default function RecentOrdersTable({ orders }: RecentOrdersTableProps) {
               <th className="py-3 px-4">เลขที่คำสั่งซื้อ</th>
               <th className="py-3 px-4">ลูกค้า</th>
               <th className="py-3 px-4">บีทที่สั่งซื้อ</th>
-              <th className="py-3 px-4">ประเภท License</th>
+              <th className="py-3 px-4">สิทธิ์การใช้งาน</th>
               <th className="py-3 px-4">ช่องทาง</th>
               <th className="py-3 px-4 text-right">ยอดชำระ</th>
               <th className="py-3 px-4 text-center">สถานะ</th>
