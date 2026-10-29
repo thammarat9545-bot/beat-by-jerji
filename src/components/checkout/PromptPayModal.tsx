@@ -214,17 +214,17 @@ export default function PromptPayModal({
                 {useCustomQrImage ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src="/promptpay-qr.png"
+                    src="/29491.jpg"
                     alt="PromptPay QR Code"
-                    className="max-h-[300px] w-auto max-w-full rounded-xl object-contain"
+                    className="max-h-[350px] w-auto max-w-full rounded-xl object-contain shadow-sm"
                     onError={(e) => {
                       const target = e.currentTarget;
                       if (!target.dataset.triedJpg) {
                         target.dataset.triedJpg = 'true';
                         target.src = '/promptpay-qr.jpg';
-                      } else if (!target.dataset.triedJpeg) {
-                        target.dataset.triedJpeg = 'true';
-                        target.src = '/promptpay-qr.jpeg';
+                      } else if (!target.dataset.triedPng) {
+                        target.dataset.triedPng = 'true';
+                        target.src = '/promptpay-qr.png';
                       } else {
                         // หากยังไม่มีการใส่รูปภาพในโฟลเดอร์ public จะสลับไปใช้ QR Code ปกติอัตโนมัติ
                         setUseCustomQrImage(false);
