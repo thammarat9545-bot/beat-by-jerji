@@ -49,8 +49,14 @@ export default function PromptPayModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
-  const promptPayTarget = process.env.NEXT_PUBLIC_PROMPTPAY_ID || '0927236792';
-  const recipientName = process.env.NEXT_PUBLIC_PROMPTPAY_NAME || 'BEAT BY JERJI STUDIO';
+  const promptPayTarget =
+    process.env.NEXT_PUBLIC_PROMPTPAY_ID && process.env.NEXT_PUBLIC_PROMPTPAY_ID !== '0899999999'
+      ? process.env.NEXT_PUBLIC_PROMPTPAY_ID
+      : '0927236792';
+  const recipientName =
+    process.env.NEXT_PUBLIC_PROMPTPAY_NAME && process.env.NEXT_PUBLIC_PROMPTPAY_NAME !== 'BEAT BY JERJI STUDIO'
+      ? process.env.NEXT_PUBLIC_PROMPTPAY_NAME
+      : (process.env.NEXT_PUBLIC_PROMPTPAY_NAME || 'ธรรมรัตน์  ไพลสาลี');
 
   // สร้าง EMVCo Payload จริงตามมาตรฐานธนาคารแห่งประเทศไทย
   const qrPayload = generatePromptPayPayload(promptPayTarget, price);
