@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generatePromptPayPayload } from '@/lib/promptpay';
 import { Beat, LicenseType, Order } from '@/types';
+import { supabase } from '@/lib/supabase';
 import {
   X,
   CheckCircle2,
@@ -95,10 +96,62 @@ export default function PromptPayModal({
     }
   };
 
-  const handleConfirmPayment = () => {
+  // ฟังก์ชันจัดการรูปสลิป (อัปโหลดขึ้น Supabase Storage หรือแปลงเป็น Base64)
+  const processSlipImage = async (file: File): Promise<string> => {
+    try {
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `slip-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `slips/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('beats-storage')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (!uploadError) {
+        const { data } = supabase.storage
+          .from('beats-storage')
+          .getPublicUrl(filePath);
+        if (data?.publicUrl) return data.publicUrl;
+      }
+    } catch (err) {
+      console.warn('Storage upload note, fallback to base64:', err);
+    }
+
+    // Fallback: ย่อขนาดรูปและแปลงเป็น Base64 ให้บันทึกลงฐานข้อมูลได้แน่นอน
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 900;
+          const scaleSize = Math.min(1, MAX_WIDTH / img.width);
+          canvas.width = img.width * scaleSize;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          } else {
+            resolve(event.target?.result as string);
+          }
+        };
+        img.onerror = () => resolve(event.target?.result as string);
+      };
+    });
+  };
+
+  const handleConfirmPayment = async () => {
     setIsProcessing(true);
 
-    setTimeout(() => {
+    try {
+      let slipUrl: string | undefined = undefined;
+      if (slipFile) {
+        slipUrl = await processSlipImage(slipFile);
+      }
+
       const orderNumber = `ORD-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${Date.now().toString().slice(-4)}`;
 
       const newOrder: Order = {
@@ -110,6 +163,7 @@ export default function PromptPayModal({
         currency: 'THB',
         status: 'COMPLETED',
         provider: 'PROMPTPAY',
+        slipUrl,
         items: [
           {
             id: `item-${Date.now()}`,
@@ -133,7 +187,10 @@ export default function PromptPayModal({
       setIsSuccess(true);
       setCompletedOrder(newOrder);
       onPaymentSuccess(newOrder);
-    }, 1500);
+    } catch (err) {
+      console.error('Confirm payment error:', err);
+      setIsProcessing(false);
+    }
   };
 
   const getLicenseLabel = (type: LicenseType) => {

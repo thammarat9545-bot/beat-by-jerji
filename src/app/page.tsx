@@ -183,6 +183,7 @@ export default function Home() {
           status: newOrder.status,
           provider: newOrder.provider,
           items: newOrder.items,
+          slipUrl: newOrder.slipUrl || null,
           createdAt: newOrder.createdAt,
         },
       ]);

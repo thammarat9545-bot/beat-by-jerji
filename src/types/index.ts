@@ -62,6 +62,7 @@ export interface Order {
   status: OrderStatus;
   provider: PaymentProvider;
   items: OrderItem[];
+  slipUrl?: string;
   createdAt: string;
 }
 
