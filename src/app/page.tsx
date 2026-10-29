@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase'; // เพิ่มการเชื่อมต่อ Supabase
 import {
   Music,
   LayoutDashboard,
@@ -62,16 +63,28 @@ export default function Home() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Load beats from local storage
+  // ดึงข้อมูลบีทจาก Supabase
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('jerji_studio_beats');
-      if (saved) {
-        setBeats(JSON.parse(saved));
+    const fetchBeats = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('beats')
+          .select('*')
+          .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+
+        if (data) {
+          // กรองเอาเฉพาะบีทที่ไม่ใช่สถานะ DRAFT มาแสดงให้ลูกค้าเห็น
+          const publicBeats = data.filter((beat) => beat.status !== 'DRAFT');
+          setBeats(publicBeats as Beat[]);
+        }
+      } catch (err: any) {
+        console.error('Error fetching beats:', err.message);
       }
-    } catch (e) {
-      console.error(e);
-    }
+    };
+
+    fetchBeats();
   }, []);
 
   // Audio element control
@@ -141,18 +154,27 @@ export default function Home() {
     setIsPromptPayOpen(true);
   };
 
-  const handlePaymentSuccess = (newOrder: Order) => {
+  const handlePaymentSuccess = async (newOrder: Order) => {
     try {
+      // อัปเดตสถานะบีทเป็น SOLD_OUT ใน Database (ถ้าเป็นการขายแบบ Exclusive)
+      if (checkoutBeat) {
+        const { error } = await supabase
+          .from('beats')
+          .update({ status: 'SOLD_OUT' })
+          .eq('id', checkoutBeat.id);
+
+        if (!error) {
+          const updatedBeats = beats.map((b) =>
+            b.id === checkoutBeat.id ? { ...b, status: 'SOLD_OUT' as const } : b
+          );
+          setBeats(updatedBeats);
+        }
+      }
+
+      // บันทึก Order ลง LocalStorage (รออัปเกรดเป็น Database ภายหลัง)
       const existingOrders: Order[] = JSON.parse(localStorage.getItem('jerji_studio_orders') || '[]');
       localStorage.setItem('jerji_studio_orders', JSON.stringify([newOrder, ...existingOrders]));
 
-      if (checkoutBeat) {
-        const updatedBeats = beats.map((b) =>
-          b.id === checkoutBeat.id ? { ...b, status: 'SOLD_OUT' as const } : b
-        );
-        setBeats(updatedBeats);
-        localStorage.setItem('jerji_studio_beats', JSON.stringify(updatedBeats));
-      }
     } catch (e) {
       console.error(e);
     }
@@ -165,7 +187,7 @@ export default function Home() {
     const matchesSearch =
       beat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       beat.genre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      beat.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      (beat.tags && beat.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())));
 
     const matchesGenre = selectedGenre === 'ALL' || beat.genre.toLowerCase().includes(selectedGenre.toLowerCase());
 
@@ -438,7 +460,7 @@ export default function Home() {
                       </p>
 
                       <div className="flex flex-wrap gap-1 mt-3">
-                        {beat.tags.map((t, idx) => (
+                        {beat.tags && beat.tags.map((t, idx) => (
                           <span
                             key={idx}
                             className="px-2 py-0.5 rounded-md text-[10px] bg-neutral-950 text-neutral-400 border border-neutral-800/80"
@@ -502,7 +524,7 @@ export default function Home() {
             </div>
             <div className="p-4 rounded-2xl bg-neutral-950/80 border border-neutral-850 text-center">
               <span className="block text-2xl font-black text-white font-mono">Instant</span>
-              <span className="text-[11px] text-neutral-400">Firebase Delivery</span>
+              <span className="text-[11px] text-neutral-400">Supabase Delivery</span>
             </div>
           </div>
         </div>
@@ -539,7 +561,7 @@ export default function Home() {
                   </span>
                 </h4>
                 <p className="text-xs text-neutral-400 truncate">
-                  {currentBeat.genre} • {currentBeat.bpm} BPM
+                  {currentBeat.genre} - {currentBeat.bpm} BPM
                 </p>
               </div>
             </div>
