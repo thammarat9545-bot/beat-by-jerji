@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import MetricsCards from '@/components/admin/MetricsCards';
@@ -16,6 +16,9 @@ import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+// นำเข้า Supabase
+import { supabase } from '@/lib/supabase';
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -24,20 +27,34 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // ตรวจสอบว่าล็อกอินแล้วหรือยัง ถ้ายังไม่ได้ล็อกอิน ให้เด้งไปหน้า /login ทันที
-  React.useEffect(() => {
+  // ตรวจสอบสถานะล็อกอิน
+  useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
     }
   }, [user, authLoading, router]);
 
-  // โหลดข้อมูลบีทที่เคยบันทึกไว้ในเบราว์เซอร์
-  React.useEffect(() => {
-    try {
-      const savedBeats = localStorage.getItem('jerji_studio_beats');
-      if (savedBeats) {
-        setBeats(JSON.parse(savedBeats));
+  // ดึงข้อมูลบีทจาก Supabase แทน LocalStorage
+  useEffect(() => {
+    const fetchBeats = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('beats')
+          .select('*')
+          .order('createdAt', { ascending: false });
+
+        if (error) throw error;
+        if (data) setBeats(data as Beat[]);
+      } catch (err: any) {
+        console.error('Error fetching beats:', err.message);
+        showToast('ดึงข้อมูลบีทไม่สำเร็จ: ' + err.message);
       }
+    };
+
+    fetchBeats();
+
+    // ส่วนของ Order ยังคงดึงจาก LocalStorage ไว้ก่อน
+    try {
       const savedOrders = localStorage.getItem('jerji_studio_orders');
       if (savedOrders) {
         setOrders(JSON.parse(savedOrders));
@@ -48,22 +65,11 @@ export default function AdminDashboardPage() {
     setIsLoaded(true);
   }, []);
 
-  // บันทึกลง LocalStorage ทุกครั้งที่มีการเปลี่ยนแปลงบีท
-  React.useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem('jerji_studio_beats', JSON.stringify(beats));
-    }
-  }, [beats, isLoaded]);
-
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBeat, setEditingBeat] = useState<Beat | null>(null);
-
-  // Audio Preview State
   const [currentPlayingBeat, setCurrentPlayingBeat] = useState<Beat | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  // Notification Toast (Optional lightweight visual feedback)
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -81,55 +87,102 @@ export default function AdminDashboardPage() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteClick = (beatId: string) => {
-    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบีทนี้?')) {
-      setBeats((prev) => prev.filter((b) => b.id !== beatId));
-      if (currentPlayingBeat?.id === beatId) {
-        setIsPlaying(false);
-        setCurrentPlayingBeat(null);
+  // ลบบีทออกจาก Supabase
+  const handleDeleteClick = async (beatId: string) => {
+    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบบีทนี้ออกจากระบบ?')) {
+      try {
+        const { error } = await supabase.from('beats').delete().eq('id', beatId);
+        
+        if (error) throw error;
+
+        setBeats((prev) => prev.filter((b) => b.id !== beatId));
+        if (currentPlayingBeat?.id === beatId) {
+          setIsPlaying(false);
+          setCurrentPlayingBeat(null);
+        }
+        showToast('ลบบีทสำเร็จ');
+      } catch (err: any) {
+        alert('เกิดข้อผิดพลาดในการลบบีท: ' + err.message);
       }
-      showToast('ลบบีทสำเร็จ');
     }
   };
 
-  const handleToggleStatus = (beatId: string, newStatus: BeatStatus) => {
-    setBeats((prev) =>
-      prev.map((b) => (b.id === beatId ? { ...b, status: newStatus } : b))
-    );
-    showToast(
-      newStatus === 'SOLD_OUT'
-        ? 'ทำเครื่องหมายว่า Exclusive Sold Out สำเร็จ'
-        : 'ปรับสถานะบีทเป็นเปิดขายแล้ว'
-    );
+  // เปลี่ยนสถานะบีทใน Supabase
+  const handleToggleStatus = async (beatId: string, newStatus: BeatStatus) => {
+    try {
+      const { error } = await supabase
+        .from('beats')
+        .update({ status: newStatus, updatedAt: new Date().toISOString() })
+        .eq('id', beatId);
+
+      if (error) throw error;
+
+      setBeats((prev) =>
+        prev.map((b) => (b.id === beatId ? { ...b, status: newStatus } : b))
+      );
+      showToast(
+        newStatus === 'SOLD_OUT'
+          ? 'ทำเครื่องหมายว่า Exclusive Sold Out สำเร็จ'
+          : 'ปรับสถานะบีทสำเร็จ'
+      );
+    } catch (err: any) {
+      alert('เปลี่ยนสถานะไม่สำเร็จ: ' + err.message);
+    }
   };
 
-  const handleSaveBeat = (beatData: Partial<Beat>) => {
-    if (editingBeat) {
-      setBeats((prev) =>
-        prev.map((b) => (b.id === editingBeat.id ? ({ ...b, ...beatData, price: Number(beatData.price || b.price || 1200) } as Beat) : b))
-      );
-      showToast('อัปเดตข้อมูลบีทเรียบร้อยแล้ว');
-    } else {
-      const newBeat: Beat = {
-        id: `beat-${Date.now()}`,
-        title: beatData.title || 'Untitled Beat',
-        slug: beatData.slug || 'untitled-beat',
-        bpm: beatData.bpm || 140,
-        musicalKey: beatData.musicalKey || 'C Minor',
-        genre: beatData.genre || 'Trap',
-        tags: beatData.tags || [],
-        coverImageUrl: beatData.coverImageUrl || '',
-        previewAudioUrl: beatData.previewAudioUrl || '',
-        status: beatData.status || 'PUBLISHED',
-        playsCount: 0,
-        likesCount: 0,
-        downloadsCount: 0,
-        price: Number(beatData.price || 1200),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setBeats((prev) => [newBeat, ...prev]);
-      showToast('เพิ่มบีทใหม่เข้าสู่คลังสำเร็จ');
+  // บันทึก/อัปเดตบีทลง Supabase
+  const handleSaveBeat = async (beatData: Partial<Beat>) => {
+    try {
+      if (editingBeat) {
+        // อัปเดตข้อมูลเก่า
+        const updatedBeat = { 
+          ...editingBeat, 
+          ...beatData, 
+          price: Number(beatData.price || editingBeat.price || 1200),
+          updatedAt: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('beats')
+          .update(updatedBeat)
+          .eq('id', editingBeat.id);
+
+        if (error) throw error;
+
+        setBeats((prev) =>
+          prev.map((b) => (b.id === editingBeat.id ? (updatedBeat as Beat) : b))
+        );
+        showToast('อัปเดตข้อมูลบีทลง Database เรียบร้อยแล้ว');
+      } else {
+        // เพิ่มบีทใหม่
+        const newBeat: Beat = {
+          id: `beat-${Date.now()}`,
+          title: beatData.title || 'Untitled Beat',
+          slug: beatData.slug || 'untitled-beat',
+          bpm: beatData.bpm || 140,
+          musicalKey: beatData.musicalKey || 'C Minor',
+          genre: beatData.genre || 'Trap',
+          tags: beatData.tags || [],
+          coverImageUrl: beatData.coverImageUrl || '',
+          previewAudioUrl: beatData.previewAudioUrl || '',
+          status: beatData.status || 'PUBLISHED',
+          playsCount: 0,
+          likesCount: 0,
+          downloadsCount: 0,
+          price: Number(beatData.price || 1200),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+
+        const { error } = await supabase.from('beats').insert(newBeat);
+
+        if (error) throw error;
+
+        setBeats((prev) => [newBeat, ...prev]);
+        showToast('เพิ่มบีทใหม่เข้าสู่ Database สำเร็จ');
+      }
+    } catch (err: any) {
+      alert('บันทึกข้อมูลไม่สำเร็จ: ' + err.message);
     }
   };
 
@@ -157,7 +210,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // 1. Loading State
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -169,7 +221,6 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // 2. ถ้ายังไม่ได้ล็อกอิน ให้ขึ้นหน้าแจ้งเตือนและเด้งไปหน้า /login
   if (!user) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center font-sans">
@@ -196,7 +247,6 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // 3. ถ้าล็อกอินแล้ว แต่ไม่ใช่ Role === 'ADMIN'
   if (user.role !== 'ADMIN') {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center font-sans">
@@ -234,7 +284,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="flex min-h-screen bg-black text-neutral-100 font-sans antialiased selection:bg-amber-500 selection:text-black">
-      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-neutral-900 border border-amber-500/40 text-amber-300 text-xs shadow-2xl shadow-amber-500/20 animate-in fade-in slide-in-from-top-3">
           <Sparkles className="w-4 h-4 text-amber-400" />
@@ -242,14 +291,12 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Left Sidebar */}
       <AdminSidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         beatCount={beats.length}
       />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-28">
         <AdminHeader
           onAddClick={handleAddClick}
@@ -257,16 +304,10 @@ export default function AdminDashboardPage() {
         />
 
         <main className="p-6 md:p-8 max-w-7xl w-full mx-auto space-y-8">
-          {/* OVERVIEW TAB */}
           {activeTab === 'overview' && (
             <>
-              {/* KPI Metrics */}
               <MetricsCards beats={beats} orders={orders} />
-
-              {/* Sales Chart Section */}
               <SalesChart />
-
-              {/* Beat Management Table */}
               <BeatManagementTable
                 beats={beats}
                 onAddClick={handleAddClick}
@@ -277,13 +318,10 @@ export default function AdminDashboardPage() {
                 isPlaying={isPlaying}
                 onPlayToggle={handlePlayToggle}
               />
-
-              {/* Recent Orders Table */}
               <RecentOrdersTable orders={orders} />
             </>
           )}
 
-          {/* BEATS TAB */}
           {activeTab === 'beats' && (
             <div className="space-y-6">
               <BeatManagementTable
@@ -299,7 +337,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* ANALYTICS TAB */}
           {activeTab === 'analytics' && (
             <div className="space-y-6">
               <MetricsCards beats={beats} orders={orders} />
@@ -307,7 +344,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* ORDERS TAB */}
           {activeTab === 'orders' && (
             <div className="space-y-6">
               <RecentOrdersTable orders={orders} />
@@ -316,7 +352,6 @@ export default function AdminDashboardPage() {
         </main>
       </div>
 
-      {/* Upload / Edit Modal */}
       <UploadBeatModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -327,7 +362,6 @@ export default function AdminDashboardPage() {
         editingBeat={editingBeat}
       />
 
-      {/* Persistent Audio Bar */}
       <AdminAudioBar
         currentBeat={currentPlayingBeat}
         isPlaying={isPlaying}
