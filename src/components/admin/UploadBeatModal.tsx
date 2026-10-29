@@ -14,7 +14,7 @@ import {
   Check,
   Loader2,
 } from 'lucide-react';
-import { uploadFileToFirebase } from '@/lib/storage';
+import { supabase } from '@/lib/supabase'; // เปลี่ยนมาเรียกใช้ Supabase แทน
 
 interface UploadBeatModalProps {
   isOpen: boolean;
@@ -39,16 +39,37 @@ export default function UploadBeatModal({
   const [status, setStatus] = useState<BeatStatus>('PUBLISHED');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
+  const [price, setPrice] = useState(1200);
+
+  // --- ฟังก์ชันสำหรับอัปโหลดไปที่ Supabase ---
+  const uploadFileToSupabase = async (file: File, folder: 'covers' | 'audio') => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('beats-storage')
+      .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage
+      .from('beats-storage')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingCover(true);
     try {
-      const url = await uploadFileToFirebase(file, 'covers');
+      const url = await uploadFileToSupabase(file, 'covers');
       setCoverImageUrl(url);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Error uploading cover:', err);
+      alert('อัปโหลดรูปภาพไม่สำเร็จ: ' + err.message);
     } finally {
       setUploadingCover(false);
     }
@@ -59,17 +80,15 @@ export default function UploadBeatModal({
     if (!file) return;
     setUploadingAudio(true);
     try {
-      const url = await uploadFileToFirebase(file, 'previews');
+      const url = await uploadFileToSupabase(file, 'audio');
       setPreviewAudioUrl(url);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error('Error uploading audio:', err);
+      alert('อัปโหลดไฟล์เสียงไม่สำเร็จ: ' + err.message);
     } finally {
       setUploadingAudio(false);
     }
   };
-
-  // Single Beat Price
-  const [price, setPrice] = useState(1200);
 
   useEffect(() => {
     if (editingBeat) {
@@ -83,7 +102,6 @@ export default function UploadBeatModal({
       setStatus(editingBeat.status);
       setPrice(editingBeat.price || 1200);
     } else {
-      // Default reset for new beat
       setTitle('');
       setBpm(130);
       setMusicalKey('C Minor');
@@ -102,11 +120,11 @@ export default function UploadBeatModal({
     e.preventDefault();
 
     if (!coverImageUrl) {
-      alert('กรุณาอัปโหลดรูปภาพปกบีท (Cover Artwork) ผ่าน Firebase Storage หรือระบุ URL');
+      alert('กรุณาอัปโหลดรูปภาพปกบีท (Cover Artwork) ผ่าน Supabase Storage หรือระบุ URL');
       return;
     }
     if (!previewAudioUrl) {
-      alert('กรุณาอัปโหลดไฟล์เสียงพรีวิว (MP3) ผ่าน Firebase Storage หรือระบุ URL');
+      alert('กรุณาอัปโหลดไฟล์เสียงพรีวิว (MP3) ผ่าน Supabase Storage หรือระบุ URL');
       return;
     }
 
@@ -261,12 +279,13 @@ export default function UploadBeatModal({
                   />
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-300 text-[11px] border border-neutral-700 cursor-pointer transition-colors">
                     <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
-                    <span>เลือกไฟล์รูปภาพ (Firebase Storage)</span>
+                    <span>เลือกไฟล์รูปภาพ (Supabase Storage)</span>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={handleCoverUpload}
                       className="hidden"
+                      disabled={uploadingCover}
                     />
                   </label>
                 </div>
@@ -294,12 +313,13 @@ export default function UploadBeatModal({
                   />
                   <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-750 text-neutral-300 text-[11px] border border-neutral-700 cursor-pointer transition-colors">
                     <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
-                    <span>เลือกไฟล์เสียง MP3 (Firebase Storage)</span>
+                    <span>เลือกไฟล์เสียง MP3 (Supabase Storage)</span>
                     <input
                       type="file"
                       accept="audio/*"
                       onChange={handleAudioUpload}
                       className="hidden"
+                      disabled={uploadingAudio}
                     />
                   </label>
                 </div>
@@ -308,9 +328,9 @@ export default function UploadBeatModal({
 
             {/* Note about Cloud Storage */}
             <div className="text-[11px] text-neutral-400 bg-neutral-900/80 p-3 rounded-xl border border-neutral-800 flex items-start gap-2">
-              <span className="text-amber-400 font-bold">Firebase Storage:</span>
+              <span className="text-amber-400 font-bold">Supabase Storage:</span>
               <span>
-                รองรับการอัปโหลดไฟล์ไปยัง Firebase Storage หรือใส่ลิงก์ตรง โดยไฟล์ตัวเต็ม Untagged WAV และ Stems ZIP สามารถตั้งค่าให้ดาวน์โหลดแบบเฉพาะสมาชิกผ่านหน้า Customer Dashboard
+                รองรับการอัปโหลดไฟล์ไปยัง Supabase Storage แบบฟรี 1GB โดยไฟล์ที่ถูกเลือกจะอัปโหลดอัตโนมัติและสร้าง Public URL กลับมาใส่ในช่องทันที
               </span>
             </div>
           </div>
