@@ -48,6 +48,7 @@ export default function PromptPayModal({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
+  const [useCustomQrImage, setUseCustomQrImage] = useState(true);
 
   const promptPayTarget =
     process.env.NEXT_PUBLIC_PROMPTPAY_ID && process.env.NEXT_PUBLIC_PROMPTPAY_ID !== '0899999999'
@@ -208,14 +209,36 @@ export default function PromptPayModal({
                 <p className="text-sm font-bold text-neutral-900">{recipientName}</p>
               </div>
 
-              {/* QR Code SVG */}
-              <div className="p-2 border-2 border-dashed border-neutral-300 rounded-2xl bg-white">
-                <QRCodeSVG
-                  value={qrPayload}
-                  size={210}
-                  level="M"
-                  includeMargin={true}
-                />
+              {/* QR Code (รองรับทั้งรูปภาพจริงจากแอปธนาคาร และ Dynamic QR) */}
+              <div className="p-2 border-2 border-dashed border-neutral-300 rounded-2xl bg-white max-w-[280px] w-full flex items-center justify-center min-h-[220px]">
+                {useCustomQrImage ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src="/promptpay-qr.png"
+                    alt="PromptPay QR Code"
+                    className="max-h-[300px] w-auto max-w-full rounded-xl object-contain"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.dataset.triedJpg) {
+                        target.dataset.triedJpg = 'true';
+                        target.src = '/promptpay-qr.jpg';
+                      } else if (!target.dataset.triedJpeg) {
+                        target.dataset.triedJpeg = 'true';
+                        target.src = '/promptpay-qr.jpeg';
+                      } else {
+                        // หากยังไม่มีการใส่รูปภาพในโฟลเดอร์ public จะสลับไปใช้ QR Code ปกติอัตโนมัติ
+                        setUseCustomQrImage(false);
+                      }
+                    }}
+                  />
+                ) : (
+                  <QRCodeSVG
+                    value={qrPayload}
+                    size={210}
+                    level="M"
+                    includeMargin={true}
+                  />
+                )}
               </div>
 
               {/* Exact Amount Highlight */}
