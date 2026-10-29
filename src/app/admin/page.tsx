@@ -53,16 +53,78 @@ export default function AdminDashboardPage() {
 
     fetchBeats();
 
-    // ส่วนของ Order ยังคงดึงจาก LocalStorage ไว้ก่อน
-    try {
-      const savedOrders = localStorage.getItem('jerji_studio_orders');
-      if (savedOrders) {
-        setOrders(JSON.parse(savedOrders));
+    // ดึงข้อมูลคำสั่งซื้อจาก Supabase Database + LocalStorage
+    const fetchOrders = async () => {
+      let localOrders: Order[] = [];
+      try {
+        const savedOrders = localStorage.getItem('jerji_studio_orders');
+        if (savedOrders) {
+          localOrders = JSON.parse(savedOrders);
+        }
+      } catch (e) {
+        console.error('Error reading local orders:', e);
       }
-    } catch (e) {
-      console.error(e);
-    }
+
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .order('createdAt', { ascending: false });
+
+        if (!error && data) {
+          let combinedOrders = [...(data as Order[])];
+
+          // ซิงค์คำสั่งซื้อจาก LocalStorage ขึ้น Supabase หากยังไม่มีใน Database
+          const missingInDb = localOrders.filter(
+            (lo) => !combinedOrders.some((co) => co.id === lo.id || co.orderNumber === lo.orderNumber)
+          );
+
+          if (missingInDb.length > 0) {
+            await supabase.from('orders').insert(missingInDb);
+            combinedOrders = [...missingInDb, ...combinedOrders];
+          }
+
+          setOrders(combinedOrders);
+          try {
+            localStorage.setItem('jerji_studio_orders', JSON.stringify(combinedOrders));
+          } catch (e) {}
+        } else {
+          // หากยังไม่ได้สร้างตาราง orders ใน Supabase ให้ใช้ข้อมูลจาก LocalStorage
+          if (localOrders.length > 0) {
+            setOrders(localOrders);
+          }
+        }
+      } catch (err: any) {
+        console.warn('Orders fetch note:', err.message);
+        if (localOrders.length > 0) {
+          setOrders(localOrders);
+        }
+      }
+    };
+
+    fetchOrders();
+
+    // Supabase Realtime: อัปเดตรายการคำสั่งซื้อทันทีเมื่อมีลูกค้าชำระเงินเข้ามา
+    const ordersChannel = supabase
+      .channel('admin-orders-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        (payload) => {
+          if (payload.new) {
+            const newOrder = payload.new as Order;
+            setOrders((prev) => [newOrder, ...prev.filter((o) => o.id !== newOrder.id)]);
+            showToast(`มีคำสั่งซื้อใหม่เข้ามา! ${newOrder.orderNumber}`);
+          }
+        }
+      )
+      .subscribe();
+
     setIsLoaded(true);
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+    };
   }, []);
 
   // Modal State

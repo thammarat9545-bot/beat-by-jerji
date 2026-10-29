@@ -171,7 +171,27 @@ export default function Home() {
         }
       }
 
-      // บันทึก Order ลง LocalStorage (รออัปเกรดเป็น Database ภายหลัง)
+      // บันทึกคำสั่งซื้อลง Supabase Database
+      const { error: orderError } = await supabase.from('orders').insert([
+        {
+          id: newOrder.id,
+          orderNumber: newOrder.orderNumber,
+          customerName: newOrder.customerName,
+          customerEmail: newOrder.customerEmail,
+          totalAmount: newOrder.totalAmount,
+          currency: newOrder.currency,
+          status: newOrder.status,
+          provider: newOrder.provider,
+          items: newOrder.items,
+          createdAt: newOrder.createdAt,
+        },
+      ]);
+
+      if (orderError) {
+        console.warn('Note: Could not insert order to Supabase table:', orderError.message);
+      }
+
+      // บันทึก Order ลง LocalStorage เผื่อเป็นแคชสำรอง
       const existingOrders: Order[] = JSON.parse(localStorage.getItem('jerji_studio_orders') || '[]');
       localStorage.setItem('jerji_studio_orders', JSON.stringify([newOrder, ...existingOrders]));
 

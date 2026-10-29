@@ -24,6 +24,7 @@ import {
   Archive,
 } from 'lucide-react';
 import { Beat, Order, LicenseType } from '@/types';
+import { supabase } from '@/lib/supabase';
 
 interface PurchasedBeatItem {
   id: string;
@@ -68,45 +69,72 @@ export default function CustomerDashboardPage() {
     }
   }, [user, loading, router]);
 
-  // Load customer orders from LocalStorage if available
+  // Load customer orders from Supabase (or fallback to LocalStorage)
   useEffect(() => {
-    try {
-      const savedOrders = localStorage.getItem('jerji_studio_orders');
-      if (savedOrders) {
-        const allOrders: Order[] = JSON.parse(savedOrders);
-        const myOrders = allOrders.filter(
-          (o) => o.customerEmail.toLowerCase() === user?.email?.toLowerCase()
-        );
-        setCustomerOrders(myOrders);
+    if (!user?.email) return;
 
-        // Derive purchased beats from completed orders
-        const items: PurchasedBeatItem[] = [];
-        myOrders
-          .filter((o) => o.status === 'COMPLETED')
-          .forEach((o) => {
-            o.items.forEach((item) => {
-              items.push({
-                id: item.id,
-                orderNumber: o.orderNumber,
-                purchasedAt: o.createdAt,
-                beatTitle: item.beatTitle,
-                bpm: item.bpm || 140,
-                musicalKey: item.musicalKey || 'C Minor',
-                genre: item.genre || 'Hip Hop',
-                coverImageUrl: item.coverImageUrl,
-                previewAudioUrl: item.previewAudioUrl || '',
-                untaggedWavUrl: item.untaggedWavUrl,
-                stemsZipUrl: item.stemsZipUrl,
-                licenseType: item.licenseType || 'EXCLUSIVE',
-                downloadCount: 0,
-              });
+    const loadOrders = async () => {
+      let myOrders: Order[] = [];
+
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .ilike('customerEmail', user.email || '')
+          .order('createdAt', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          myOrders = data as Order[];
+        } else {
+          // Fallback to local storage
+          const savedOrders = localStorage.getItem('jerji_studio_orders');
+          if (savedOrders) {
+            const allOrders: Order[] = JSON.parse(savedOrders);
+            myOrders = allOrders.filter(
+              (o) => o.customerEmail?.toLowerCase() === user.email?.toLowerCase()
+            );
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching customer orders from Supabase:', e);
+        const savedOrders = localStorage.getItem('jerji_studio_orders');
+        if (savedOrders) {
+          const allOrders: Order[] = JSON.parse(savedOrders);
+          myOrders = allOrders.filter(
+            (o) => o.customerEmail?.toLowerCase() === user.email?.toLowerCase()
+          );
+        }
+      }
+
+      setCustomerOrders(myOrders);
+
+      // Derive purchased beats from completed orders
+      const items: PurchasedBeatItem[] = [];
+      myOrders
+        .filter((o) => o.status === 'COMPLETED')
+        .forEach((o) => {
+          o.items?.forEach((item) => {
+            items.push({
+              id: item.id,
+              orderNumber: o.orderNumber,
+              purchasedAt: o.createdAt,
+              beatTitle: item.beatTitle,
+              bpm: item.bpm || 140,
+              musicalKey: item.musicalKey || 'C Minor',
+              genre: item.genre || 'Hip Hop',
+              coverImageUrl: item.coverImageUrl,
+              previewAudioUrl: item.previewAudioUrl || '',
+              untaggedWavUrl: item.untaggedWavUrl,
+              stemsZipUrl: item.stemsZipUrl,
+              licenseType: item.licenseType || 'EXCLUSIVE',
+              downloadCount: 0,
             });
           });
-        setPurchasedBeats(items);
-      }
-    } catch (e) {
-      console.error(e);
-    }
+        });
+      setPurchasedBeats(items);
+    };
+
+    loadOrders();
   }, [user]);
 
   const handlePlayToggle = (beat: PurchasedBeatItem) => {
