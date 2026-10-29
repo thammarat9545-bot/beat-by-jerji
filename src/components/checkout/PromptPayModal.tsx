@@ -49,7 +49,7 @@ export default function PromptPayModal({
   const [isSuccess, setIsSuccess] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
-  const promptPayTarget = process.env.NEXT_PUBLIC_PROMPTPAY_ID || '0899999999';
+  const promptPayTarget = process.env.NEXT_PUBLIC_PROMPTPAY_ID || '0927236792';
   const recipientName = process.env.NEXT_PUBLIC_PROMPTPAY_NAME || 'BEAT BY JERJI STUDIO';
 
   // สร้าง EMVCo Payload จริงตามมาตรฐานธนาคารแห่งประเทศไทย
